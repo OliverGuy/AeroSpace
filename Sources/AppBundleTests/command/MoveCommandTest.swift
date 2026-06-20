@@ -9,6 +9,83 @@ final class MoveCommandTest: XCTestCase {
     func testParse() {
         assertNil(parseCommand("move --fail-if-fullscreen left").errorOrNil)
         assertNil(parseCommand("move --fail-if-macos-native-fullscreen --window-id 1 right").errorOrNil)
+        assertNil(parseCommand("move --join-with-out-of-level-target right").errorOrNil)
+    }
+
+    func testJoinWithOutOfLevelTarget_outOfLevel() async throws {
+        // Focused window's parent has a perpendicular orientation, so the neighbor in `right`
+        // lives at an ancestor level (out-of-level).
+        let root = Workspace.get(byName: name).rootTilingContainer.apply {
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                assertEquals(TestWindow.new(id: 1, parent: $0).focusWindow(), true)
+                TestWindow.new(id: 2, parent: $0)
+            }
+            TestWindow.new(id: 3, parent: $0)
+        }
+
+        try await parseCommand("move --join-with-out-of-level-target right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        // join-with right replaces window 3 with a v_tiles holding [focused (w1), w3].
+        assertEquals(
+            root.layoutDescription,
+            .h_tiles([
+                .v_tiles([.window(2)]),
+                .v_tiles([.window(1), .window(3)]),
+            ]),
+        )
+    }
+
+    func testJoinWithOutOfLevel_default_doesNotJoin() async throws {
+        // Same setup, without the flag → default behavior: moveOut into root next to v_tiles.
+        let root = Workspace.get(byName: name).rootTilingContainer.apply {
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                assertEquals(TestWindow.new(id: 1, parent: $0).focusWindow(), true)
+                TestWindow.new(id: 2, parent: $0)
+            }
+            TestWindow.new(id: 3, parent: $0)
+        }
+
+        try await parseCommand("move right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(
+            root.layoutDescription,
+            .h_tiles([
+                .v_tiles([.window(2)]),
+                .window(1),
+                .window(3),
+            ]),
+        )
+    }
+
+    func testJoinWithOutOfLevelTarget_sameLevelUnaffected() async throws {
+        // When the neighbor IS already at the same level, --join-with-out-of-level-target
+        // should not change behavior: a plain swap still happens.
+        let root = Workspace.get(byName: name).rootTilingContainer.apply {
+            assertEquals(TestWindow.new(id: 1, parent: $0).focusWindow(), true)
+            TestWindow.new(id: 2, parent: $0)
+        }
+
+        try await parseCommand("move --join-with-out-of-level-target right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(root.layoutDescription, .h_tiles([.window(2), .window(1)]))
+    }
+
+    func testJoinWithOutOfLevelTarget_noNeighborFallsBack() async throws {
+        // No neighbor in direction → fall back to default boundary handling (implicit container).
+        let workspace = Workspace.get(byName: name)
+        workspace.rootTilingContainer.apply {
+            TestWindow.new(id: 1, parent: $0)
+            assertEquals(TestWindow.new(id: 2, parent: $0).focusWindow(), true)
+            TestWindow.new(id: 3, parent: $0)
+        }
+
+        try await parseCommand("move --join-with-out-of-level-target up").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(
+            workspace.layoutDescription,
+            .workspace([
+                .v_tiles([
+                    .window(2),
+                    .h_tiles([.window(1), .window(3)]),
+                ]),
+            ]),
+        )
     }
 
     func testBinaryTree_edgeMoveHitsBoundaryInsteadOfUnnesting() async throws {

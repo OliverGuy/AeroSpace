@@ -51,7 +51,7 @@ let focus_help_generated = """
     USAGE: focus [-h|--help] [--ignore-floating] [--wrap-around]
                  [--boundaries <boundary>] [--boundaries-action <action>]
                  [--fail-if-fullscreen] [--fail-if-macos-native-fullscreen]
-                 [--by-rect] (left|down|up|right)
+                 [--by-rect] [--directional-focus-history] (left|down|up|right)
        OR: focus [-h|--help] [--ignore-floating] [--wrap-around]
                  [--boundaries <boundary>] [--boundaries-action <action>]
                  (dfs-next|dfs-prev)

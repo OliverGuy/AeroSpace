@@ -223,6 +223,20 @@ private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, w
     window?.unbindFromParent() // It's important to unbind to get correct data from below
     let mruWindow = workspace.mostRecentWindowRecursive
     if let mruWindow, let tilingParent = mruWindow.parent as? TilingContainer {
+        if config.splitNewWindowWithFocused {
+            // Wrap the focused window in a fresh perpendicular container, same as `join-with`,
+            // and place the new window beside it inside that container.
+            let prevBinding = mruWindow.unbindFromParent()
+            let newParent = TilingContainer(
+                parent: tilingParent,
+                adaptiveWeight: prevBinding.adaptiveWeight,
+                tilingParent.orientation.opposite,
+                .tiles,
+                index: prevBinding.index,
+            )
+            mruWindow.bind(to: newParent, adaptiveWeight: WEIGHT_AUTO, index: 0)
+            return BindingData(parent: newParent, adaptiveWeight: WEIGHT_AUTO, index: INDEX_BIND_LAST)
+        }
         return BindingData(
             parent: tilingParent,
             adaptiveWeight: WEIGHT_AUTO,

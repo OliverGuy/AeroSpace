@@ -424,6 +424,22 @@ enable-normalization-binary-tree = false
 
 Unless you're hardcore i3 user who knows what they are doing, it's recommended to keep the normalizations enabled.
 
+[#new-window-placement]
+=== New window placement
+
+By default, a newly detected window becomes a sibling of the window that was focused before it
+spawned (placed right after it in the same container).
+
+With `split-new-window-with-focused = true`, the new window is instead "split" with the previously
+focused window: both are wrapped in a fresh container perpendicular to their parent, the same
+structure the xref:commands.adoc#join-with[join-with] command produces. This is closer to i3's
+default behavior, where opening a window splits the focused one.
+
+[source,toml]
+----
+split-new-window-with-focused = false # default
+----
+
 [#floating-windows]
 === Floating windows
 

@@ -34,6 +34,11 @@ struct MoveCommand: Command {
                     }
                 } else {
                     let outOfLevelTarget = currentWindow.closestParent(hasChildrenInDirection: direction, withLayout: nil)
+                    if args.joinWithOutOfLevelTarget, outOfLevelTarget != nil {
+                        return JoinWithCommand(args: JoinWithCmdArgs(direction: direction)
+                            .copy(\.windowId, currentWindow.windowId))
+                            .run(env, io)
+                    }
                     if config.enableNormalizationBinaryTree, outOfLevelTarget == nil {
                         // Binary-tree normalization makes "move out" at the workspace edge futile: it
                         // re-nests the window immediately, so it can never bubble up to the root edge

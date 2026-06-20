@@ -10,5 +10,10 @@ public struct JoinWithCmdArgs: CmdArgs {
         posArgs: [newMandatoryPosArgParser(\.direction, parseCardinalDirectionArg, placeholder: CardinalDirection.unionLiteral)],
     )
 
+    public init(direction: CardinalDirection) {
+        self.commonState = .init([])
+        self.direction = .initialized(direction)
+    }
+
     public var direction: Lateinit<CardinalDirection> = .uninitialized
 }

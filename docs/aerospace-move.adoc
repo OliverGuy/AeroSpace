@@ -11,7 +11,8 @@ include::util/man-attributes.adoc[]
 // tag::synopsis[]
 aerospace move [-h|--help] [--window-id <window-id>] [--boundaries <boundary>]
                [--boundaries-action <boundary-action>] [--fail-if-fullscreen]
-               [--fail-if-macos-native-fullscreen] (left|down|up|right)
+               [--fail-if-macos-native-fullscreen] [--join-with-out-of-level-target]
+               (left|down|up|right)
 
 // end::synopsis[]
 
@@ -46,6 +47,12 @@ Exit with non-zero code if the target window is fullscreen by the `fullscreen` c
 
 --fail-if-macos-native-fullscreen::
 Exit with non-zero code if the target window is in macOS native fullscreen.
+
+--join-with-out-of-level-target::
+When the neighbor in `<direction>` is not an immediate sibling of the focused window,
+run `join-with <direction>` instead of moving the window out one level. +
+Has no effect when the neighbor is already at the same level (the move still swaps or descends as usual). +
+If no neighbor exists in `<direction>` (workspace edge), falls back to the default boundary behavior.
 
 // =========================================================== Examples
 include::util/conditional-examples-header.adoc[]

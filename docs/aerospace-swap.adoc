@@ -10,7 +10,8 @@ include::util/man-attributes.adoc[]
 [verse]
 // tag::synopsis[]
 aerospace swap [-h|--help] [--window-id <window-id>] [--swap-focus]
-               [--wrap-around] (left|down|up|right|dfs-next|dfs-prev)
+               [--wrap-around] [--by-rect]
+               (left|down|up|right|dfs-next|dfs-prev)
 
 // end::synopsis[]
 
@@ -36,6 +37,12 @@ By default, this command does not change the focused window.
 
 --wrap-around::
 Wrap around if the window is at the edge of the workspace (for `(left|down|up|right)`) or the start/end of the depth first order (for `(dfs-next|dfs-prev)`).
+
+--by-rect::
+When picking the target window inside the sibling subtree in `<direction>`, descend by rect
+overlap on the perpendicular axis instead of MRU. Lets `swap` honor visible position (e.g.
+`swap right` from a bottom-left window swaps with the bottom-right window). Only compatible
+with `(left|down|up|right)`.
 
 // =========================================================== Arguments
 include::./util/conditional-arguments-header.adoc[]

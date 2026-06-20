@@ -9,7 +9,7 @@ include::util/man-attributes.adoc[]
 == Synopsis
 [verse]
 // tag::synopsis[]
-aerospace join-with [-h|--help] [--window-id <window-id>] (left|down|up|right)
+aerospace join-with [-h|--help] [--window-id <window-id>] [--by-rect] (left|down|up|right)
 
 // end::synopsis[]
 
@@ -51,6 +51,10 @@ include::util/conditional-options-header.adoc[]
 
 --window-id <window-id>::
 include::./util/window-id-flag-desc.adoc[]
+
+--by-rect::
+When picking the target node in `<direction>`, descend by rect overlap on the perpendicular
+axis instead of MRU. Lets `join-with` honor visible position rather than tree topology.
 
 // end::body[]
 

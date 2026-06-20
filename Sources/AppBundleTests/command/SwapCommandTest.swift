@@ -44,7 +44,64 @@ final class SwapCommandTest: XCTestCase {
         assertEquals(root.mostRecentWindowRecursive?.windowId, 1)
     }
 
-    func testSwap_swapWindows_DfsRelative() async {
+    func testSwap_byRect() async throws {
+        // h_tiles [v_tiles[A=1, B=2(focused)], v_tiles[C=3, D=4]]
+        // B is in the bottom-left. swap right by-rect should target D (bottom-right), not the MRU.
+        let root = Workspace.get(byName: name).rootTilingContainer.apply {
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 1, parent: $0)
+                assertEquals(TestWindow.new(id: 2, parent: $0).focusWindow(), true)
+            }
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 3, parent: $0)
+                TestWindow.new(id: 4, parent: $0)
+            }
+        }
+        // Without --by-rect: would target MRU of right v_tiles (= 4, since bound last). Same here
+        // by coincidence — make MRU = 3 instead, so the difference is observable.
+        Workspace.get(byName: name).rootTilingContainer.children
+            .compactMap { ($0 as? TilingContainer)?.children.first as? Window }
+            .first(where: { $0.windowId == 3 })?
+            .markAsMostRecentChild()
+
+        try await parseCommand("swap --by-rect right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(
+            root.layoutDescription,
+            .h_tiles([
+                .v_tiles([.window(1), .window(4)]),
+                .v_tiles([.window(3), .window(2)]),
+            ]),
+        )
+    }
+
+    func testSwap_default_picksMru() async throws {
+        // Same tree, but without --by-rect: with MRU set to C(=3), default behavior swaps with C.
+        let root = Workspace.get(byName: name).rootTilingContainer.apply {
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 1, parent: $0)
+                assertEquals(TestWindow.new(id: 2, parent: $0).focusWindow(), true)
+            }
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 3, parent: $0)
+                TestWindow.new(id: 4, parent: $0)
+            }
+        }
+        Workspace.get(byName: name).rootTilingContainer.children
+            .compactMap { ($0 as? TilingContainer)?.children.first as? Window }
+            .first(where: { $0.windowId == 3 })?
+            .markAsMostRecentChild()
+
+        try await parseCommand("swap right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(
+            root.layoutDescription,
+            .h_tiles([
+                .v_tiles([.window(1), .window(3)]),
+                .v_tiles([.window(2), .window(4)]),
+            ]),
+        )
+    }
+
+    func testSwap_swapWindows_DfsRelative() async throws {
         let root = Workspace.get(byName: name).rootTilingContainer.apply {
             TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
                 assertEquals(TestWindow.new(id: 1, parent: $0).focusWindow(), true)

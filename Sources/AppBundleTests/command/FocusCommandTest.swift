@@ -99,6 +99,28 @@ final class FocusCommandTest: XCTestCase {
         assertEquals(focus.windowOrNil?.windowId, 2)
     }
 
+    func testFocus_byRect() async throws {
+        // h_tiles [v_tiles[A=1, B=2(focused)], v_tiles[C=3, D=4]]
+        // focus right --by-rect should focus D (bottom-right), even if C is MRU.
+        Workspace.get(byName: name).rootTilingContainer.apply {
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 1, parent: $0)
+                assertEquals(TestWindow.new(id: 2, parent: $0).focusWindow(), true)
+            }
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 3, parent: $0)
+                TestWindow.new(id: 4, parent: $0)
+            }
+        }
+        Workspace.get(byName: name).rootTilingContainer.children
+            .compactMap { ($0 as? TilingContainer)?.children.first as? Window }
+            .first(where: { $0.windowId == 3 })?
+            .markAsMostRecentChild()
+
+        try await parseCommand("focus --by-rect right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(focus.windowOrNil?.windowId, 4)
+    }
+
     func testFocus() {
         assertEquals(focus.windowOrNil, nil)
         Workspace.get(byName: name).rootTilingContainer.apply {

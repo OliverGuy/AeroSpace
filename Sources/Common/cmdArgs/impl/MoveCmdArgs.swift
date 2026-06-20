@@ -11,6 +11,7 @@ public struct MoveCmdArgs: CmdArgs {
             "--fail-if-fullscreen": trueBoolFlag(\.failIfFullscreen),
             "--fail-if-macos-native-fullscreen": trueBoolFlag(\.failIfMacosNativeFullscreen),
             "--join-with-out-of-level-target": trueBoolFlag(\.joinWithOutOfLevelTarget),
+            "--by-rect": trueBoolFlag(\.byRect),
         ],
         posArgs: [newMandatoryPosArgParser(\.direction, parseCardinalDirectionArg, placeholder: CardinalDirection.unionLiteral)],
     )
@@ -21,6 +22,7 @@ public struct MoveCmdArgs: CmdArgs {
     public var failIfFullscreen: Bool = false
     public var failIfMacosNativeFullscreen: Bool = false
     public var joinWithOutOfLevelTarget: Bool = false
+    public var byRect: Bool = false
 
     public enum Boundaries: String, CaseIterable, Equatable, Sendable {
         case workspace

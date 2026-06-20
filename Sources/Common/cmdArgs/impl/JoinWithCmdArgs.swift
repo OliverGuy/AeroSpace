@@ -6,6 +6,7 @@ public struct JoinWithCmdArgs: CmdArgs {
         help: join_with_help_generated,
         flags: [
             "--window-id": windowIdSubArgParser(),
+            "--by-rect": trueBoolFlag(\.byRect),
         ],
         posArgs: [newMandatoryPosArgParser(\.direction, parseCardinalDirectionArg, placeholder: CardinalDirection.unionLiteral)],
     )
@@ -16,4 +17,5 @@ public struct JoinWithCmdArgs: CmdArgs {
     }
 
     public var direction: Lateinit<CardinalDirection> = .uninitialized
+    public var byRect: Bool = false
 }

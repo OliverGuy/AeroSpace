@@ -12,7 +12,7 @@ include::util/man-attributes.adoc[]
 aerospace move [-h|--help] [--window-id <window-id>] [--boundaries <boundary>]
                [--boundaries-action <boundary-action>] [--fail-if-fullscreen]
                [--fail-if-macos-native-fullscreen] [--join-with-out-of-level-target]
-               (left|down|up|right)
+               [--by-rect] (left|down|up|right)
 
 // end::synopsis[]
 
@@ -53,6 +53,12 @@ When the neighbor in `<direction>` is not an immediate sibling of the focused wi
 run `join-with <direction>` instead of moving the window out one level. +
 Has no effect when the neighbor is already at the same level (the move still swaps or descends as usual). +
 If no neighbor exists in `<direction>` (workspace edge), falls back to the default boundary behavior.
+
+--by-rect::
+When a neighbor exists in `<direction>`, swap the focused window with the leaf whose rect best
+overlaps the focused window's perpendicular extent, instead of the topological/MRU sibling.
+Lets `move` honor visible position (e.g. `move right` from a bottom-left window swaps with the
+bottom-right window).
 
 // =========================================================== Examples
 include::util/conditional-examples-header.adoc[]

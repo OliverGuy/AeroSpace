@@ -12,7 +12,7 @@ include::util/man-attributes.adoc[]
 aerospace focus [-h|--help] [--ignore-floating] [--wrap-around]
                 [--boundaries <boundary>] [--boundaries-action <action>]
                 [--fail-if-fullscreen] [--fail-if-macos-native-fullscreen]
-                (left|down|up|right)
+                [--by-rect] (left|down|up|right)
 aerospace focus [-h|--help] [--ignore-floating] [--wrap-around]
                 [--boundaries <boundary>] [--boundaries-action <action>]
                 (dfs-next|dfs-prev)
@@ -73,6 +73,12 @@ Only compatible with `(left|down|up|right)`.
 --fail-if-macos-native-fullscreen::
 Exit with non-zero code if the current target window is in macOS native fullscreen.
 Only compatible with `(left|down|up|right)`.
+
+--by-rect::
+When picking the target window inside the sibling subtree in `<direction>`, descend by rect
+overlap on the perpendicular axis instead of MRU. Lets directional navigation honor visible
+position (e.g. `focus right` from a bottom-left window targets the bottom-right window). Only
+compatible with `(left|down|up|right)`.
 
 // =========================================================== Arguments
 include::./util/conditional-arguments-header.adoc[]

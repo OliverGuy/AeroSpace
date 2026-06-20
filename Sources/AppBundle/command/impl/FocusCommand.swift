@@ -26,8 +26,13 @@ struct FocusCommand: Command {
             case .direction(let direction):
                 let window = target.windowOrNil
                 if let (parent, ownIndex) = window?.closestParent(hasChildrenInDirection: direction, withLayout: nil) {
-                    guard let windowToFocus = parent.children[ownIndex + direction.focusOffset]
-                        .findLeafWindowRecursive(snappedTo: direction.opposite) else { return .fail(io.err(bugPrompt())) }
+                    let windowToFocus: Window? = if args.byRect, let window {
+                        target.workspace.findLeafWindowByRect(from: window, direction: direction)
+                    } else {
+                        parent.children[ownIndex + direction.focusOffset]
+                            .findLeafWindowRecursive(snappedTo: direction.opposite)
+                    }
+                    guard let windowToFocus else { return .fail(io.err(bugPrompt())) }
                     return .from(bool: windowToFocus.focusWindow())
                 } else {
                     return hitWorkspaceBoundaries(target, io, args, direction)

@@ -51,7 +51,7 @@ let focus_help_generated = """
     USAGE: focus [-h|--help] [--ignore-floating] [--wrap-around]
                  [--boundaries <boundary>] [--boundaries-action <action>]
                  [--fail-if-fullscreen] [--fail-if-macos-native-fullscreen]
-                 (left|down|up|right)
+                 [--by-rect] (left|down|up|right)
        OR: focus [-h|--help] [--ignore-floating] [--wrap-around]
                  [--boundaries <boundary>] [--boundaries-action <action>]
                  (dfs-next|dfs-prev)
@@ -64,7 +64,7 @@ let fullscreen_help_generated = """
        OR: fullscreen [-h|--help] off [--window-id <window-id>] [--fail-if-noop]
     """
 let join_with_help_generated = """
-    USAGE: join-with [-h|--help] [--window-id <window-id>] (left|down|up|right)
+    USAGE: join-with [-h|--help] [--window-id <window-id>] [--by-rect] (left|down|up|right)
     """
 let layout_help_generated = """
     USAGE: layout [-h|--help] [--window-id <window-id>|--workspace <workspace>]
@@ -132,7 +132,7 @@ let move_help_generated = """
     USAGE: move [-h|--help] [--window-id <window-id>] [--boundaries <boundary>]
                 [--boundaries-action <boundary-action>] [--fail-if-fullscreen]
                 [--fail-if-macos-native-fullscreen] [--join-with-out-of-level-target]
-                (left|down|up|right)
+                [--by-rect] (left|down|up|right)
     """
 let reload_config_help_generated = """
     USAGE: reload-config [-h|--help] [--no-gui] [--dry-run] [--warnings-as-errors]
@@ -155,7 +155,8 @@ let summon_workspace_help_generated = """
     """
 let swap_help_generated = """
     USAGE: swap [-h|--help] [--window-id <window-id>] [--swap-focus]
-                [--wrap-around] (left|down|up|right|dfs-next|dfs-prev)
+                [--wrap-around] [--by-rect]
+                (left|down|up|right|dfs-next|dfs-prev)
     """
 let test_not_help_generated = """
     USAGE: test-not [-h|--help] <lhs> = <rhs>

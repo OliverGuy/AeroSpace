@@ -10,6 +10,31 @@ final class MoveCommandTest: XCTestCase {
         assertNil(parseCommand("move --fail-if-fullscreen left").errorOrNil)
         assertNil(parseCommand("move --fail-if-macos-native-fullscreen --window-id 1 right").errorOrNil)
         assertNil(parseCommand("move --join-with-out-of-level-target right").errorOrNil)
+        assertNil(parseCommand("move --by-rect right").errorOrNil)
+    }
+
+    func testMove_byRect() async throws {
+        // h_tiles [v_tiles[A=1, B=2(focused)], v_tiles[C=3, D=4]]
+        // B is in the bottom-left. move right --by-rect should swap B with D (bottom-right).
+        let root = Workspace.get(byName: name).rootTilingContainer.apply {
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 1, parent: $0)
+                assertEquals(TestWindow.new(id: 2, parent: $0).focusWindow(), true)
+            }
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 3, parent: $0)
+                TestWindow.new(id: 4, parent: $0)
+            }
+        }
+
+        try await parseCommand("move --by-rect right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(
+            root.layoutDescription,
+            .h_tiles([
+                .v_tiles([.window(1), .window(4)]),
+                .v_tiles([.window(3), .window(2)]),
+            ]),
+        )
     }
 
     func testJoinWithOutOfLevelTarget_outOfLevel() async throws {
@@ -30,6 +55,49 @@ final class MoveCommandTest: XCTestCase {
             .h_tiles([
                 .v_tiles([.window(2)]),
                 .v_tiles([.window(1), .window(3)]),
+            ]),
+        )
+    }
+
+    func testJoinWithOutOfLevelTarget_byRect_joinsInsteadOfSwap() async throws {
+        // Same out-of-level setup, but with --by-rect. It must join (not swap) the focused window
+        // with the rect-targeted out-of-level neighbor.
+        let root = Workspace.get(byName: name).rootTilingContainer.apply {
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                assertEquals(TestWindow.new(id: 1, parent: $0).focusWindow(), true)
+                TestWindow.new(id: 2, parent: $0)
+            }
+            TestWindow.new(id: 3, parent: $0)
+        }
+
+        try await parseCommand("move --by-rect --join-with-out-of-level-target right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(
+            root.layoutDescription,
+            .h_tiles([
+                .v_tiles([.window(2)]),
+                .v_tiles([.window(1), .window(3)]),
+            ]),
+        )
+    }
+
+    func testJoinWithOutOfLevelTarget_byRect_ordersByRect() async throws {
+        // h_tiles [v_tiles[A=1, B=2(focused)], C=3]
+        // B is bottom-left. join-with C (out of level) by rect: B is below C's center, so B must
+        // end up BELOW C in the new vertical container, regardless of moving right vs left.
+        let root = Workspace.get(byName: name).rootTilingContainer.apply {
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 1, parent: $0)
+                assertEquals(TestWindow.new(id: 2, parent: $0).focusWindow(), true)
+            }
+            TestWindow.new(id: 3, parent: $0)
+        }
+
+        try await parseCommand("move --by-rect --join-with-out-of-level-target right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(
+            root.layoutDescription,
+            .h_tiles([
+                .v_tiles([.window(1)]),
+                .v_tiles([.window(3), .window(2)]),
             ]),
         )
     }

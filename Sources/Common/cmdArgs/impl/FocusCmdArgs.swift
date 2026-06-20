@@ -14,6 +14,7 @@ public struct FocusCmdArgs: CmdArgs {
             "--fail-if-fullscreen": trueBoolFlag(\.failIfFullscreen),
             "--fail-if-macos-native-fullscreen": trueBoolFlag(\.failIfMacosNativeFullscreen),
             "--wrap-around": trueBoolFlag(\.wrapAroundAlias),
+            "--by-rect": trueBoolFlag(\.byRect),
         ],
         posArgs: [ArgParser(\.cardinalOrDfsDirection, upcastArgParserFun(parseCardinalOrDfsDirection))],
         conflictingOptions: [
@@ -30,6 +31,7 @@ public struct FocusCmdArgs: CmdArgs {
     public var dfsIndex: UInt32? = nil
     public var cardinalOrDfsDirection: CardinalOrDfsDirection? = nil
     public var floatingAsTiling: Bool = true
+    public var byRect: Bool = false
 
     public init(rawArgs: StrArrSlice, cardinalOrDfsDirection: CardinalOrDfsDirection) {
         self.commonState = .init(rawArgs)

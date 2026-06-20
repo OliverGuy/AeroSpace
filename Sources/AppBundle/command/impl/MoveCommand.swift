@@ -23,7 +23,18 @@ struct MoveCommand: Command {
             case .tilingContainer(let parent):
                 guard let indexOfCurrent = currentWindow.ownIndex else { return .fail(io.err(bugPrompt())) }
                 let indexOfSiblingTarget = indexOfCurrent + direction.focusOffset
-                if parent.orientation == direction.orientation && parent.children.indices.contains(indexOfSiblingTarget) {
+                let hasSiblingInDirection = parent.orientation == direction.orientation && parent.children.indices.contains(indexOfSiblingTarget)
+                if args.byRect, let leaf = target.workspace.findLeafWindowByRect(from: currentWindow, direction: direction) {
+                    if !hasSiblingInDirection && args.joinWithOutOfLevelTarget {
+                        return JoinWithCommand(args: JoinWithCmdArgs(direction: direction)
+                            .copy(\.windowId, currentWindow.windowId)
+                            .copy(\.byRect, true))
+                            .run(env, io)
+                    }
+                    swapWindows(mruDominant: currentWindow, leaf)
+                    return .succ
+                }
+                if hasSiblingInDirection {
                     switch parent.children[indexOfSiblingTarget].tilingTreeNodeCasesOrDie() {
                         case .tilingContainer(let topLevelSiblingTargetContainer):
                             return deepMoveIn(window: currentWindow, into: topLevelSiblingTargetContainer, moveDirection: direction, io)

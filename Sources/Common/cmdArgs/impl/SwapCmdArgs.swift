@@ -8,6 +8,7 @@ public struct SwapCmdArgs: CmdArgs {
             "--swap-focus": trueBoolFlag(\.swapFocus),
             "--wrap-around": trueBoolFlag(\.wrapAround),
             "--window-id": windowIdSubArgParser(),
+            "--by-rect": trueBoolFlag(\.byRect),
         ],
         posArgs: [newMandatoryPosArgParser(\.target, parseCardinalOrDfsDirection, placeholder: CardinalOrDfsDirection.unionLiteral)],
     )
@@ -15,6 +16,7 @@ public struct SwapCmdArgs: CmdArgs {
     public var target: Lateinit<CardinalOrDfsDirection> = .uninitialized
     public var swapFocus: Bool = false
     public var wrapAround: Bool = false
+    public var byRect: Bool = false
 }
 
 func parseSwapCmdArgs(_ args: StrArrSlice) -> ParsedCmd<SwapCmdArgs> {

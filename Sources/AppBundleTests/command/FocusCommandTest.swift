@@ -121,6 +121,44 @@ final class FocusCommandTest: XCTestCase {
         assertEquals(focus.windowOrNil?.windowId, 4)
     }
 
+    func testFocus_directionalFocusHistory() async throws {
+        // h_tiles [A=1, v_tiles[B=2, C=3(focused)]]
+        Workspace.get(byName: name).rootTilingContainer.apply {
+            TestWindow.new(id: 1, parent: $0)
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 2, parent: $0)
+                assertEquals(TestWindow.new(id: 3, parent: $0).focusWindow(), true)
+            }
+        }
+
+        try await parseCommand("focus --by-rect --directional-focus-history left").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(focus.windowOrNil?.windowId, 1) // moved onto A
+        // Without history, --by-rect right from A focuses B (top). With history, it returns to C.
+        try await parseCommand("focus --by-rect --directional-focus-history right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(focus.windowOrNil?.windowId, 3)
+    }
+
+    func testFocus_directionalFocusHistory_invalidatedByLayoutChange() async throws {
+        // h_tiles [A=1, v_tiles[B=2, C=3(focused)]]
+        let root = Workspace.get(byName: name).rootTilingContainer.apply {
+            TestWindow.new(id: 1, parent: $0)
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 2, parent: $0)
+                assertEquals(TestWindow.new(id: 3, parent: $0).focusWindow(), true)
+            }
+        }
+        try await parseCommand("focus --by-rect --directional-focus-history left").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(focus.windowOrNil?.windowId, 1) // on A, remembers right -> C
+
+        // Move C to the LEFT of A: it's no longer in the right subtree, so the memory is stale.
+        let c = Window.get(byId: 3)!
+        c.unbindFromParent()
+        c.bind(to: root, adaptiveWeight: 1, index: 0)
+
+        try await parseCommand("focus --by-rect --directional-focus-history right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(focus.windowOrNil?.windowId, 2) // falls back to rect-best (B), not stale C
+    }
+
     func testFocus() {
         assertEquals(focus.windowOrNil, nil)
         Workspace.get(byName: name).rootTilingContainer.apply {

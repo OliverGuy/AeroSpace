@@ -8,6 +8,10 @@ open class Window: TreeNode, Hashable {
     var isFullscreen: Bool = false
     var noOuterGapsInFullscreen: Bool = false
     var layoutReason: LayoutReason = .standard
+    /// For `focus --directional-focus-history`: per direction, the window to return to when focusing
+    /// back. Keyed by the direction you'd travel to go back (e.g. focused leftward onto this window
+    /// → stores the source under `.right`). Stores windowId; validated on read.
+    @MainActor var directionalFocusReturn: [CardinalDirection: UInt32] = [:]
 
     @MainActor
     init(id: UInt32, _ app: any AbstractApp, lastFloatingSize: CGSize?, parent: NonLeafTreeNodeObject, adaptiveWeight: CGFloat, index: Int) {

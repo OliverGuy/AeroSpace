@@ -136,7 +136,7 @@ aerospace -h;
 <move_node_to_monitor2_flag> ::= --window-id <window_id>|--focus-follows-window|--fail-if-noop;
 
 <focus_direction_flag> ::= --boundaries <boundary>|--boundaries-action <boundaries_action>|--ignore-floating|--wrap-around
-    | --fail-if-fullscreen | --fail-if-macos-native-fullscreen | --by-rect;
+    | --fail-if-fullscreen | --fail-if-macos-native-fullscreen | --by-rect | --directional-focus-history;
 <focus_dfs_relative_flag> ::= --boundaries-action <boundaries_action>|--ignore-floating|--wrap-around;
 <boundaries_action> ::= stop|fail|wrap-around-the-workspace|wrap-around-all-monitors;
 <boundary> ::= workspace|all-monitors-outer-frame;

@@ -15,6 +15,7 @@ public struct FocusCmdArgs: CmdArgs {
             "--fail-if-macos-native-fullscreen": trueBoolFlag(\.failIfMacosNativeFullscreen),
             "--wrap-around": trueBoolFlag(\.wrapAroundAlias),
             "--by-rect": trueBoolFlag(\.byRect),
+            "--directional-focus-history": trueBoolFlag(\.directionalFocusHistory),
         ],
         posArgs: [ArgParser(\.cardinalOrDfsDirection, upcastArgParserFun(parseCardinalOrDfsDirection))],
         conflictingOptions: [
@@ -32,6 +33,7 @@ public struct FocusCmdArgs: CmdArgs {
     public var cardinalOrDfsDirection: CardinalOrDfsDirection? = nil
     public var floatingAsTiling: Bool = true
     public var byRect: Bool = false
+    public var directionalFocusHistory: Bool = false
 
     public init(rawArgs: StrArrSlice, cardinalOrDfsDirection: CardinalOrDfsDirection) {
         self.commonState = .init(rawArgs)

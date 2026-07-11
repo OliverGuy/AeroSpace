@@ -44,6 +44,7 @@ struct Config: ConvenienceMutable {
     var startAtLogin: Bool = false
     var autoReloadConfig: Bool = false
     var automaticallyUnhideMacosHiddenApps: Bool = false
+    var restoreTreeOnStartup: Bool = true
     var accordionPadding: Int = 30
     var enableNormalizationOppositeOrientationForNestedContainers: Bool = true
     var enableNormalizationBinaryTree: Bool = false

@@ -21,6 +21,9 @@ import Foundation
         GlobalObserver.initObserver()
         Workspace.garbageCollectUnusedWorkspaces() // init workspaces
         _ = Workspace.all.first?.focusWorkspace()
+        if config.restoreTreeOnStartup {
+            loadPersistedTreeStateFromDisk() // Restore window/workspace assignment & tree layout from the previous run
+        }
         await runHeavyCompleteRefreshSession(
             .startup,
             // It's important for the first initialization to be non cancellable

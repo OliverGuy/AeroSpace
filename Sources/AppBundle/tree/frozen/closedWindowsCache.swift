@@ -9,7 +9,7 @@ import Common
 /// so that once the screen is unlocked, AeroSpace could restore windows to where they were
 @MainActor private var closedWindowsCache = FrozenWorld(workspaces: [], monitors: [], windowIds: [])
 
-struct FrozenMonitor: Sendable {
+struct FrozenMonitor: Sendable, Codable {
     let topLeftCorner: CGPoint
     let visibleWorkspace: String
 
@@ -19,7 +19,7 @@ struct FrozenMonitor: Sendable {
     }
 }
 
-struct FrozenWorkspace: Sendable {
+struct FrozenWorkspace: Sendable, Codable {
     let name: String
     let monitor: FrozenMonitor // todo drop this property, once monitor to workspace assignment migrates to TreeNode
     let rootTilingNode: FrozenContainer
@@ -43,11 +43,42 @@ struct FrozenWorkspace: Sendable {
     if allWindowIds.isSubset(of: closedWindowsCache.windowIds) {
         return // already cached
     }
-    closedWindowsCache = FrozenWorld(
+    closedWindowsCache = currentFrozenWorld()
+}
+
+@MainActor func currentFrozenWorld() -> FrozenWorld {
+    let allWs = Workspace.all
+    return FrozenWorld(
         workspaces: allWs.map { FrozenWorkspace($0) },
         monitors: monitors.map(FrozenMonitor.init),
-        windowIds: allWindowIds,
+        windowIds: allWs.flatMap { collectAllWindowIdsRecursive($0) }.toSet(),
     )
+}
+
+// Persisted so window->workspace and tree layout survive an AeroSpace restart (even Ctrl-C).
+// Lives in /tmp on purpose: it's cleared on reboot, and after a reboot the saved window ids are
+// stale (apps are gone), so we must NOT restore from it then.
+private let stateFileUrl = URL(filePath: "/tmp/bobko.aerospace/tree-state-\(unixUserName).json")
+@MainActor private var lastPersisted: Data? = nil
+
+@MainActor func persistTreeStateToDisk() {
+    if !config.restoreTreeOnStartup { return }
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = .sortedKeys // stable output so the dedup below actually dedups
+    guard let data = try? encoder.encode(currentFrozenWorld()) else { return }
+    if data == lastPersisted { return } // ponytail: dedup; add debounce if encode cost ever shows up
+    lastPersisted = data
+    try? FileManager.default.createDirectory(at: stateFileUrl.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try? data.write(to: stateFileUrl, options: .atomic)
+}
+
+/// Seed the cache from the previous run's persisted state so that `restoreClosedWindowsCacheIfNeeded`
+/// restores windows to their saved workspace/tree position as they're detected at startup.
+@MainActor func loadPersistedTreeStateFromDisk() {
+    guard let data = try? Data(contentsOf: stateFileUrl),
+          let world = try? JSONDecoder().decode(FrozenWorld.self, from: data) else { return }
+    lastPersisted = data
+    closedWindowsCache = world
 }
 
 @MainActor func restoreClosedWindowsCacheIfNeeded(newlyDetectedWindow: Window) async throws -> Bool {

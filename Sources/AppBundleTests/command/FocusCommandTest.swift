@@ -99,7 +99,7 @@ final class FocusCommandTest: XCTestCase {
         assertEquals(focus.windowOrNil?.windowId, 2)
     }
 
-    func testFocus_byRect() async throws {
+    func testFocus_byRect() async {
         // h_tiles [v_tiles[A=1, B=2(focused)], v_tiles[C=3, D=4]]
         // focus right --by-rect should focus D (bottom-right), even if C is MRU.
         Workspace.get(byName: name).rootTilingContainer.apply {
@@ -117,11 +117,11 @@ final class FocusCommandTest: XCTestCase {
             .first(where: { $0.windowId == 3 })?
             .markAsMostRecentChild()
 
-        try await parseCommand("focus --by-rect right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("focus --by-rect right").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(focus.windowOrNil?.windowId, 4)
     }
 
-    func testFocus_directionalFocusHistory() async throws {
+    func testFocus_directionalFocusHistory() async {
         // h_tiles [A=1, v_tiles[B=2, C=3(focused)]]
         Workspace.get(byName: name).rootTilingContainer.apply {
             TestWindow.new(id: 1, parent: $0)
@@ -131,14 +131,14 @@ final class FocusCommandTest: XCTestCase {
             }
         }
 
-        try await parseCommand("focus --by-rect --directional-focus-history left").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("focus --by-rect --directional-focus-history left").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(focus.windowOrNil?.windowId, 1) // moved onto A
         // Without history, --by-rect right from A focuses B (top). With history, it returns to C.
-        try await parseCommand("focus --by-rect --directional-focus-history right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("focus --by-rect --directional-focus-history right").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(focus.windowOrNil?.windowId, 3)
     }
 
-    func testFocus_directionalFocusHistory_invalidatedByLayoutChange() async throws {
+    func testFocus_directionalFocusHistory_invalidatedByLayoutChange() async {
         // h_tiles [A=1, v_tiles[B=2, C=3(focused)]]
         let root = Workspace.get(byName: name).rootTilingContainer.apply {
             TestWindow.new(id: 1, parent: $0)
@@ -147,7 +147,7 @@ final class FocusCommandTest: XCTestCase {
                 assertEquals(TestWindow.new(id: 3, parent: $0).focusWindow(), true)
             }
         }
-        try await parseCommand("focus --by-rect --directional-focus-history left").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("focus --by-rect --directional-focus-history left").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(focus.windowOrNil?.windowId, 1) // on A, remembers right -> C
 
         // Move C to the LEFT of A: it's no longer in the right subtree, so the memory is stale.
@@ -155,7 +155,7 @@ final class FocusCommandTest: XCTestCase {
         c.unbindFromParent()
         c.bind(to: root, adaptiveWeight: 1, index: 0)
 
-        try await parseCommand("focus --by-rect --directional-focus-history right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("focus --by-rect --directional-focus-history right").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(focus.windowOrNil?.windowId, 2) // falls back to rect-best (B), not stale C
     }
 

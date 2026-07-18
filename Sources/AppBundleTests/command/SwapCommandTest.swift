@@ -44,7 +44,7 @@ final class SwapCommandTest: XCTestCase {
         assertEquals(root.mostRecentWindowRecursive?.windowId, 1)
     }
 
-    func testSwap_byRect() async throws {
+    func testSwap_byRect() async {
         // h_tiles [v_tiles[A=1, B=2(focused)], v_tiles[C=3, D=4]]
         // B is in the bottom-left. swap right by-rect should target D (bottom-right), not the MRU.
         let root = Workspace.get(byName: name).rootTilingContainer.apply {
@@ -64,7 +64,7 @@ final class SwapCommandTest: XCTestCase {
             .first(where: { $0.windowId == 3 })?
             .markAsMostRecentChild()
 
-        try await parseCommand("swap --by-rect right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("swap --by-rect right").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(
             root.layoutDescription,
             .h_tiles([
@@ -74,7 +74,7 @@ final class SwapCommandTest: XCTestCase {
         )
     }
 
-    func testSwap_default_picksMru() async throws {
+    func testSwap_default_picksMru() async {
         // Same tree, but without --by-rect: with MRU set to C(=3), default behavior swaps with C.
         let root = Workspace.get(byName: name).rootTilingContainer.apply {
             TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
@@ -91,7 +91,7 @@ final class SwapCommandTest: XCTestCase {
             .first(where: { $0.windowId == 3 })?
             .markAsMostRecentChild()
 
-        try await parseCommand("swap right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("swap right").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(
             root.layoutDescription,
             .h_tiles([
@@ -101,7 +101,7 @@ final class SwapCommandTest: XCTestCase {
         )
     }
 
-    func testSwap_swapWindows_DfsRelative() async throws {
+    func testSwap_swapWindows_DfsRelative() async {
         let root = Workspace.get(byName: name).rootTilingContainer.apply {
             TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
                 assertEquals(TestWindow.new(id: 1, parent: $0).focusWindow(), true)

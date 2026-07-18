@@ -6,7 +6,7 @@ import XCTest
 final class JoinWithCommandTest: XCTestCase {
     override func setUp() async throws { setUpWorkspacesForTests() }
 
-    func testJoinWith_byRect() async throws {
+    func testJoinWith_byRect() async {
         // h_tiles [v_tiles[A=1, B=2(focused)], v_tiles[C=3, D=4]]
         // join-with right --by-rect targets D (bottom-right), so B joins with D.
         let root = Workspace.get(byName: name).rootTilingContainer.apply {
@@ -20,7 +20,7 @@ final class JoinWithCommandTest: XCTestCase {
             }
         }
 
-        try await parseCommand("join-with --by-rect right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("join-with --by-rect right").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(
             root.layoutDescription,
             .h_tiles([
@@ -33,7 +33,7 @@ final class JoinWithCommandTest: XCTestCase {
         )
     }
 
-    func testMoveIn() async throws {
+    func testMoveIn() async {
         let root = Workspace.get(byName: name).rootTilingContainer.apply {
             TestWindow.new(id: 0, parent: $0)
             assertEquals(TestWindow.new(id: 1, parent: $0).focusWindow(), true)

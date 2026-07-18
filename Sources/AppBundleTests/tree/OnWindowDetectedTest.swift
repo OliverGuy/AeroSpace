@@ -22,7 +22,7 @@ final class OnWindowDetectedTest: XCTestCase {
         )
     }
 
-    func testMatcherCommandReceivesDetectedWindowId() async throws {
+    func testMatcherCommandReceivesDetectedWindowId() async {
         let workspace = Workspace.get(byName: name)
         let focused = TestWindow.new(id: 1, parent: workspace.rootTilingContainer)
         let detected = TestWindow.new(id: 2, parent: workspace.rootTilingContainer)

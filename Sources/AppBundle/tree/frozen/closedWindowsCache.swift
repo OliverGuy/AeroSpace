@@ -44,6 +44,8 @@ struct FrozenWorkspace: Sendable, Codable {
         return // already cached
     }
     closedWindowsCache = currentFrozenWorld()
+    idRemap = [:]
+    allowBundleIdRematch = false // live snapshot: ids are current, no reboot rematch needed
 }
 
 @MainActor func currentFrozenWorld() -> FrozenWorld {
@@ -55,11 +57,21 @@ struct FrozenWorkspace: Sendable, Codable {
     )
 }
 
-// Persisted so window->workspace and tree layout survive an AeroSpace restart (even Ctrl-C).
-// Lives in /tmp on purpose: it's cleared on reboot, and after a reboot the saved window ids are
-// stale (apps are gone), so we must NOT restore from it then.
-private let stateFileUrl = URL(filePath: "/tmp/bobko.aerospace/tree-state-\(unixUserName).json")
+// Persisted so window->workspace assignment and tree layout survive an AeroSpace restart, and, after
+// a reboot, so windows can be re-matched to their saved slots by app bundle id (see idRemap below).
+// Durable path (survives reboot). Stale ids after a reboot are harmless: the fast path only trusts an
+// id match when the bundle id also matches, otherwise it falls back to bundle-id rematch.
+private let stateFileUrl: URL = (ProcessInfo.processInfo.environment["XDG_STATE_HOME"].map { URL(filePath: $0) }
+    ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: ".local/state"))
+    .appending(path: "aerospace/tree-state.json")
 @MainActor private var lastPersisted: Data? = nil
+
+// Restore state. frozen(old) window id -> live(new) window id. For Ctrl-C/app-restart the mapping is
+// identity (ids are stable); after a reboot it's built by matching bundle ids.
+@MainActor private var idRemap: [UInt32: UInt32] = [:]
+// Bundle-id rematch is only allowed for a cache loaded from disk at startup, never for the in-memory
+// lock-screen cache (where a reopened window must NOT hijack a recently-closed window's slot).
+@MainActor private var allowBundleIdRematch = false
 
 @MainActor func persistTreeStateToDisk() {
     if !config.restoreTreeOnStartup { return }
@@ -79,12 +91,38 @@ private let stateFileUrl = URL(filePath: "/tmp/bobko.aerospace/tree-state-\(unix
           let world = try? JSONDecoder().decode(FrozenWorld.self, from: data) else { return }
     lastPersisted = data
     closedWindowsCache = world
+    idRemap = [:]
+    allowBundleIdRematch = true
+}
+
+private func collectFrozenWindows(_ node: FrozenTreeNode) -> [FrozenWindow] {
+    switch node {
+        case .window(let w): [w]
+        case .container(let c): c.children.flatMap(collectFrozenWindows)
+    }
+}
+
+@MainActor private func allFrozenWindows() -> [FrozenWindow] {
+    closedWindowsCache.workspaces.flatMap {
+        collectFrozenWindows(.container($0.rootTilingNode)) + $0.floatingWindows + $0.macosUnconventionalWindows
+    }
 }
 
 @MainActor func restoreClosedWindowsCacheIfNeeded(newlyDetectedWindow: Window) async throws -> Bool {
-    if !closedWindowsCache.windowIds.contains(newlyDetectedWindow.windowId) {
+    let newId = newlyDetectedWindow.windowId
+    if idRemap.values.contains(newId) { return true } // already restored (e.g. re-detected after a bundle-id rematch)
+
+    let frozen = allFrozenWindows()
+    if let f = frozen.first(where: { $0.id == newId }), f.bundleId == newlyDetectedWindow.app.rawAppBundleId {
+        idRemap[newId] = newId // trusted id match (Ctrl-C/app-restart/lock-screen). bundle id guards against cross-reboot id reuse
+    } else if allowBundleIdRematch, let bundleId = newlyDetectedWindow.app.rawAppBundleId,
+              let oldId = frozen.first(where: { $0.bundleId == bundleId && idRemap[$0.id] == nil })?.id
+    {
+        idRemap[oldId] = newId // reboot: best-effort match to a saved slot of the same app
+    } else {
         return false
     }
+
     let monitors = monitors
     let topLeftCornerToMonitor = monitors.grouped { $0.rect.topLeftCorner }
 
@@ -94,10 +132,10 @@ private let stateFileUrl = URL(filePath: "/tmp/bobko.aerospace/tree-state-\(unix
             .singleOrNil()?
             .setActiveWorkspace(workspace)
         for frozenWindow in frozenWorkspace.floatingWindows {
-            MacWindow.get(byId: frozenWindow.id)?.bindAsFloatingWindow(to: workspace)
+            liveMacWindow(forFrozen: frozenWindow.id)?.bindAsFloatingWindow(to: workspace)
         }
         for frozenWindow in frozenWorkspace.macosUnconventionalWindows { // Will get fixed by normalizations
-            MacWindow.get(byId: frozenWindow.id)?.bindAsFloatingWindow(to: workspace)
+            liveMacWindow(forFrozen: frozenWindow.id)?.bindAsFloatingWindow(to: workspace)
         }
         let prevRoot = workspace.rootTilingContainer // Save prevRoot into a variable to avoid it being garbage collected earlier than needed
         let potentialOrphans = prevRoot.allLeafWindowsRecursive
@@ -116,6 +154,10 @@ private let stateFileUrl = URL(filePath: "/tmp/bobko.aerospace/tree-state-\(unix
     return true
 }
 
+@MainActor private func liveMacWindow(forFrozen id: UInt32) -> Window? {
+    MacWindow.get(byId: idRemap[id] ?? id)
+}
+
 @discardableResult
 @MainActor
 private func restoreTreeRecursive(frozenContainer: FrozenContainer, parent: NonLeafTreeNodeObject, index: Int) -> Bool {
@@ -131,7 +173,7 @@ private func restoreTreeRecursive(frozenContainer: FrozenContainer, parent: NonL
         switch child {
             case .window(let w):
                 // Stop the loop if can't find the window, because otherwise all the subsequent windows will have incorrect index
-                guard let window = MacWindow.get(byId: w.id) else { return false }
+                guard let window = liveMacWindow(forFrozen: w.id) else { return false }
                 window.bind(to: container, adaptiveWeight: w.weight, index: index)
             case .container(let c):
                 // There is no reason to continue
@@ -154,4 +196,6 @@ private func restoreTreeRecursive(frozenContainer: FrozenContainer, parent: NonL
 // and with mouse manipulations
 @MainActor func resetClosedWindowsCache() {
     closedWindowsCache = FrozenWorld(workspaces: [], monitors: [], windowIds: [])
+    idRemap = [:]
+    allowBundleIdRematch = false
 }

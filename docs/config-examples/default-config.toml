@@ -53,8 +53,10 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 # Also see: https://nikitabobko.github.io/AeroSpace/goodies#disable-hide-app
 automatically-unhide-macos-hidden-apps = false
 
-# Restore window/workspace assignment and tree layout after an AeroSpace restart (survives Ctrl-C).
-# State is saved in /tmp, so it's intentionally forgotten on reboot (window ids are stale by then).
+# Restore window/workspace assignment and tree layout across an AeroSpace restart (survives Ctrl-C).
+# After a full reboot, windows are re-matched to their saved slots by app bundle id on a best-effort
+# basis (exact tree splits can't be reconstructed, since macOS window ids change every boot).
+# State is saved under $XDG_STATE_HOME (or ~/.local/state)/aerospace/tree-state.json
 # Fallback value (if you omit the key): restore-tree-on-startup = true
 restore-tree-on-startup = true
 

@@ -35,10 +35,12 @@ struct FrozenContainer: Sendable, Codable {
 struct FrozenWindow: Sendable, Codable {
     let id: UInt32
     let weight: CGFloat
+    let bundleId: String? // Used to re-match windows after a reboot, when window ids are no longer stable
 
     @MainActor init(_ window: Window) {
         id = window.windowId
         weight = getWeightOrNil(window) ?? 1
+        bundleId = window.app.rawAppBundleId
     }
 }
 

@@ -13,7 +13,7 @@ final class MoveCommandTest: XCTestCase {
         assertNil(parseCommand("move --by-rect right").errorOrNil)
     }
 
-    func testMove_byRect() async throws {
+    func testMove_byRect() async {
         // h_tiles [v_tiles[A=1, B=2(focused)], v_tiles[C=3, D=4]]
         // B is in the bottom-left. move right --by-rect should swap B with D (bottom-right).
         let root = Workspace.get(byName: name).rootTilingContainer.apply {
@@ -27,7 +27,7 @@ final class MoveCommandTest: XCTestCase {
             }
         }
 
-        try await parseCommand("move --by-rect right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("move --by-rect right").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(
             root.layoutDescription,
             .h_tiles([
@@ -37,7 +37,7 @@ final class MoveCommandTest: XCTestCase {
         )
     }
 
-    func testJoinWithOutOfLevelTarget_outOfLevel() async throws {
+    func testJoinWithOutOfLevelTarget_outOfLevel() async {
         // Focused window's parent has a perpendicular orientation, so the neighbor in `right`
         // lives at an ancestor level (out-of-level).
         let root = Workspace.get(byName: name).rootTilingContainer.apply {
@@ -48,7 +48,7 @@ final class MoveCommandTest: XCTestCase {
             TestWindow.new(id: 3, parent: $0)
         }
 
-        try await parseCommand("move --join-with-out-of-level-target right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("move --join-with-out-of-level-target right").cmdOrDie.run(.defaultEnv, .emptyStdin)
         // join-with right replaces window 3 with a v_tiles holding [focused (w1), w3].
         assertEquals(
             root.layoutDescription,
@@ -59,7 +59,7 @@ final class MoveCommandTest: XCTestCase {
         )
     }
 
-    func testJoinWithOutOfLevelTarget_byRect_joinsInsteadOfSwap() async throws {
+    func testJoinWithOutOfLevelTarget_byRect_joinsInsteadOfSwap() async {
         // Same out-of-level setup, but with --by-rect. It must join (not swap) the focused window
         // with the rect-targeted out-of-level neighbor.
         let root = Workspace.get(byName: name).rootTilingContainer.apply {
@@ -70,7 +70,7 @@ final class MoveCommandTest: XCTestCase {
             TestWindow.new(id: 3, parent: $0)
         }
 
-        try await parseCommand("move --by-rect --join-with-out-of-level-target right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("move --by-rect --join-with-out-of-level-target right").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(
             root.layoutDescription,
             .h_tiles([
@@ -80,7 +80,7 @@ final class MoveCommandTest: XCTestCase {
         )
     }
 
-    func testJoinWithOutOfLevelTarget_byRect_ordersByRect() async throws {
+    func testJoinWithOutOfLevelTarget_byRect_ordersByRect() async {
         // h_tiles [v_tiles[A=1, B=2(focused)], C=3]
         // B is bottom-left. join-with C (out of level) by rect: B is below C's center, so B must
         // end up BELOW C in the new vertical container, regardless of moving right vs left.
@@ -92,7 +92,7 @@ final class MoveCommandTest: XCTestCase {
             TestWindow.new(id: 3, parent: $0)
         }
 
-        try await parseCommand("move --by-rect --join-with-out-of-level-target right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("move --by-rect --join-with-out-of-level-target right").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(
             root.layoutDescription,
             .h_tiles([
@@ -102,7 +102,7 @@ final class MoveCommandTest: XCTestCase {
         )
     }
 
-    func testJoinWithOutOfLevel_default_doesNotJoin() async throws {
+    func testJoinWithOutOfLevel_default_doesNotJoin() async {
         // Same setup, without the flag → default behavior: moveOut into root next to v_tiles.
         let root = Workspace.get(byName: name).rootTilingContainer.apply {
             TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
@@ -112,7 +112,7 @@ final class MoveCommandTest: XCTestCase {
             TestWindow.new(id: 3, parent: $0)
         }
 
-        try await parseCommand("move right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("move right").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(
             root.layoutDescription,
             .h_tiles([
@@ -123,7 +123,7 @@ final class MoveCommandTest: XCTestCase {
         )
     }
 
-    func testJoinWithOutOfLevelTarget_sameLevelUnaffected() async throws {
+    func testJoinWithOutOfLevelTarget_sameLevelUnaffected() async {
         // When the neighbor IS already at the same level, --join-with-out-of-level-target
         // should not change behavior: a plain swap still happens.
         let root = Workspace.get(byName: name).rootTilingContainer.apply {
@@ -131,11 +131,11 @@ final class MoveCommandTest: XCTestCase {
             TestWindow.new(id: 2, parent: $0)
         }
 
-        try await parseCommand("move --join-with-out-of-level-target right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("move --join-with-out-of-level-target right").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(root.layoutDescription, .h_tiles([.window(2), .window(1)]))
     }
 
-    func testJoinWithOutOfLevelTarget_noNeighborFallsBack() async throws {
+    func testJoinWithOutOfLevelTarget_noNeighborFallsBack() async {
         // No neighbor in direction → fall back to default boundary handling (implicit container).
         let workspace = Workspace.get(byName: name)
         workspace.rootTilingContainer.apply {
@@ -144,7 +144,7 @@ final class MoveCommandTest: XCTestCase {
             TestWindow.new(id: 3, parent: $0)
         }
 
-        try await parseCommand("move --join-with-out-of-level-target up").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        await parseCommand("move --join-with-out-of-level-target up").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(
             workspace.layoutDescription,
             .workspace([
@@ -156,7 +156,7 @@ final class MoveCommandTest: XCTestCase {
         )
     }
 
-    func testBinaryTree_edgeMoveHitsBoundaryInsteadOfUnnesting() async throws {
+    func testBinaryTree_edgeMoveHitsBoundaryInsteadOfUnnesting() async {
         // With binary-tree normalization on, a window at the workspace edge (nothing in `direction`
         // anywhere up the tree) must apply the boundary action instead of bubbling out of its
         // container — otherwise normalization re-nests it and it can never cross to an adjacent
@@ -171,7 +171,7 @@ final class MoveCommandTest: XCTestCase {
             }
         }
 
-        let result = try await parseCommand("move --boundaries-action stop right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        let result = await parseCommand("move --boundaries-action stop right").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(
             workspace.layoutDescription,
             .workspace([
@@ -181,7 +181,7 @@ final class MoveCommandTest: XCTestCase {
         assertEquals(result.exitCode.rawValue, 0)
     }
 
-    func testFailIfFullscreen() async throws {
+    func testFailIfFullscreen() async {
         let root = Workspace.get(byName: name).rootTilingContainer.apply {
             let window = TestWindow.new(id: 1, parent: $0)
             assertEquals(window.focusWindow(), true)

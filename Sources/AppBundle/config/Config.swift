@@ -49,6 +49,7 @@ struct Config: ConvenienceMutable {
     var enableNormalizationOppositeOrientationForNestedContainers: Bool = true
     var enableNormalizationBinaryTree: Bool = false
     var splitNewWindowWithFocused: Bool = false
+    var fullscreenCoversMonitor: Bool = false
     var persistentWorkspaces: OrderedSet<String> = []
     var execOnWorkspaceChange: [String] = [] // todo deprecate
     var keyMapping = KeyMapping()

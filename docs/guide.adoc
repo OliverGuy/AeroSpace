@@ -440,6 +440,20 @@ default behavior, where opening a window splits the focused one.
 split-new-window-with-focused = false # default
 ----
 
+[#fullscreen-covers-monitor]
+=== Fullscreen covers monitor
+
+With `fullscreen-covers-monitor = true`, a (non-native) fullscreen window is treated as covering its
+whole monitor for the xref:commands.adoc#focus[focus] command: the directional `focus` command can't
+reach the windows behind it, and any monitor that holds a fullscreen window counts as a single tile.
+Focusing such a window by any other means (e.g. `focus --window-id`, clicking it) still exits
+fullscreen, as it does without this option.
+
+[source,toml]
+----
+fullscreen-covers-monitor = false # default
+----
+
 [#floating-windows]
 === Floating windows
 

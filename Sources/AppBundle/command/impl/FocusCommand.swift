@@ -25,6 +25,11 @@ struct FocusCommand: Command {
         switch args.target {
             case .direction(let direction):
                 let window = target.windowOrNil
+                // A fullscreen window covers the whole monitor: there's no directional target within
+                // the workspace, so go straight to the workspace boundaries.
+                if config.fullscreenCoversMonitor, window?.isFullscreen == true {
+                    return hitWorkspaceBoundaries(target, io, args, direction)
+                }
                 if let (parent, ownIndex) = window?.closestParent(hasChildrenInDirection: direction, withLayout: nil) {
                     let siblingInDirection = parent.children[ownIndex + direction.focusOffset]
                     // The remembered window to return to (focus history). Re-validate it: must still
@@ -130,13 +135,16 @@ struct FocusCommand: Command {
         case .wrapAroundTheWorkspace:
             return wrapAroundTheWorkspace(target, io, direction)
         case .wrapAroundAllMonitors:
-            wrappedMonitor.activeWorkspace.findLeafWindowRecursive(snappedTo: direction.opposite)?.markAsMostRecentChild()
-            return .from(bool: wrappedMonitor.activeWorkspace.focusWorkspace())
+            let ws = wrappedMonitor.activeWorkspace
+            (ws.fullscreenCoveringWindow ?? ws.findLeafWindowRecursive(snappedTo: direction.opposite))?.markAsMostRecentChild()
+            return .from(bool: ws.focusWorkspace())
     }
 }
 
 @MainActor private func wrapAroundTheWorkspace(_ target: LiveFocus, _ io: CmdIo, _ direction: CardinalDirection) -> BinaryExitCode {
-    guard let windowToFocus = target.workspace.findLeafWindowRecursive(snappedTo: direction.opposite) else {
+    guard let windowToFocus = target.workspace.fullscreenCoveringWindow
+        ?? target.workspace.findLeafWindowRecursive(snappedTo: direction.opposite)
+    else {
         return .fail(io.err(noWindowIsFocused))
     }
     return .from(bool: windowToFocus.focusWindow())

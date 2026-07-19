@@ -18,6 +18,15 @@ extension Workspace {
         }
     }
 
+    /// When `fullscreen-covers-monitor` is enabled, a non-native-fullscreen window is treated as
+    /// covering the whole monitor for focus navigation. Returns that window, if any.
+    @MainActor var fullscreenCoveringWindow: Window? {
+        guard config.fullscreenCoversMonitor,
+              let mru = rootTilingContainer.mostRecentWindowRecursive, mru.isFullscreen
+        else { return nil }
+        return mru
+    }
+
     @MainActor
     var floatingWindows: [Window] {
         floatingWindowsContainer.children.filterIsInstance(of: Window.self)

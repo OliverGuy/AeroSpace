@@ -140,6 +140,7 @@ private let configParser: [String: any ParserProtocol<Config>] = [
     "enable-normalization-opposite-orientation-for-nested-containers": Parser(\.enableNormalizationOppositeOrientationForNestedContainers, parseBool),
     "enable-normalization-binary-tree": Parser(\.enableNormalizationBinaryTree, parseBool),
     "split-new-window-with-focused": Parser(\.splitNewWindowWithFocused, parseBool),
+    "fullscreen-covers-monitor": Parser(\.fullscreenCoversMonitor, parseBool),
 
     "default-root-container-layout": Parser(\.defaultRootContainerLayout, parseLayout),
     "default-root-container-orientation": Parser(\.defaultRootContainerOrientation, parseDefaultContainerOrientation),

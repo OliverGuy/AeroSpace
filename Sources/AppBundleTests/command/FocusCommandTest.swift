@@ -229,6 +229,37 @@ final class FocusCommandTest: XCTestCase {
         assertEquals(focus.windowOrNil?.windowId, 2)
     }
 
+    func testFullscreenCoversMonitor() async {
+        config.fullscreenCoversMonitor = true
+        Workspace.get(byName: name).rootTilingContainer.apply {
+            let window = TestWindow.new(id: 1, parent: $0)
+            assertEquals(window.focusWindow(), true)
+            window.isFullscreen = true
+            TestWindow.new(id: 2, parent: $0)
+        }
+
+        // The fullscreen window covers the monitor: `focus` can't reach window 2.
+        await parseCommand("focus right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(focus.windowOrNil?.windowId, 1)
+
+        // Even wrap-around stays on the fullscreen window.
+        await parseCommand("focus --boundaries-action wrap-around-the-workspace right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(focus.windowOrNil?.windowId, 1)
+    }
+
+    func testFullscreenCoversMonitorDisabledByDefault() async {
+        Workspace.get(byName: name).rootTilingContainer.apply {
+            let window = TestWindow.new(id: 1, parent: $0)
+            assertEquals(window.focusWindow(), true)
+            window.isFullscreen = true
+            TestWindow.new(id: 2, parent: $0)
+        }
+
+        // Without the option, focus reaches window 2 as usual.
+        await parseCommand("focus right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(focus.windowOrNil?.windowId, 2)
+    }
+
     func testFocusFindMruLeaf() async {
         let workspace = Workspace.get(byName: name)
         var startWindow: Window!

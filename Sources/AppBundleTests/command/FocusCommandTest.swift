@@ -159,6 +159,75 @@ final class FocusCommandTest: XCTestCase {
         assertEquals(focus.windowOrNil?.windowId, 2) // falls back to rect-best (B), not stale C
     }
 
+    func testFocus_directionalFocusHistory_resetByMove() async {
+        // 2x2 grid: h_tiles[ v_tiles[A=1, C=3], v_tiles[B=2, D=4] ]
+        //   A B
+        //   C D
+        Workspace.get(byName: name).rootTilingContainer.apply {
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 1, parent: $0)
+                TestWindow.new(id: 3, parent: $0)
+            }
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                assertEquals(TestWindow.new(id: 2, parent: $0).focusWindow(), true)
+                TestWindow.new(id: 4, parent: $0)
+            }
+        }
+
+        // From B, focus left onto A: A now remembers "go right -> B".
+        await parseCommand("focus --by-rect --directional-focus-history left").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(focus.windowOrNil?.windowId, 1)
+
+        // Swap B and D (move D up). Now:
+        //   A D
+        //   C B
+        // B stays inside the right subtree, so the read-time validation can't spot the staleness.
+        assertEquals(Window.get(byId: 4)!.focusWindow(), true)
+        await parseCommand("move up").cmdOrDie.run(.defaultEnv, .emptyStdin)
+
+        // Focus right from A must follow the current layout (D, top-right), not the stale history (B).
+        assertEquals(Window.get(byId: 1)!.focusWindow(), true)
+        await parseCommand("focus --by-rect --directional-focus-history right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        assertEquals(focus.windowOrNil?.windowId, 4)
+    }
+
+    /// After recording directional-focus history on A ("go right -> B"), performs `event` and
+    /// asserts the history was dropped. Covers non-`move` restructuring: spawns, closures, etc.
+    @MainActor
+    private func assertHistoryResetBy(_ event: (_ rightColumn: TilingContainer) -> Void) async {
+        // h_tiles[ v_tiles[A=1, C=3], v_tiles[B=2, D=4] ]
+        var rightColumn: TilingContainer! = nil
+        Workspace.get(byName: name).rootTilingContainer.apply {
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 1, parent: $0)
+                TestWindow.new(id: 3, parent: $0)
+            }
+            rightColumn = TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                assertEquals(TestWindow.new(id: 2, parent: $0).focusWindow(), true)
+                TestWindow.new(id: 4, parent: $0)
+            }
+        }
+        await parseCommand("focus --by-rect --directional-focus-history left").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        let a = Window.get(byId: 1)!
+        assertEquals(a.directionalFocusReturn[.right], 2) // precondition: history recorded
+
+        event(rightColumn)
+
+        assertEquals(a.directionalFocusReturn.isEmpty, true) // history dropped by the restructuring
+    }
+
+    func testFocus_directionalFocusHistory_resetBySpawn() async {
+        await assertHistoryResetBy { rightColumn in
+            TestWindow.new(id: 5, parent: rightColumn) // a new window appears
+        }
+    }
+
+    func testFocus_directionalFocusHistory_resetByClosure() async {
+        await assertHistoryResetBy { _ in
+            Window.get(byId: 4)!.closeAxWindow() // a window is closed (non-AeroSpace event)
+        }
+    }
+
     func testFocus() {
         assertEquals(focus.windowOrNil, nil)
         Workspace.get(byName: name).rootTilingContainer.apply {

@@ -175,7 +175,7 @@ struct FocusCommand: Command {
             tilingParent = workspace.rootTilingContainer
         }
 
-        let data = window.unbindFromParent()
+        let data = withoutDirectionalFocusHistoryReset { window.unbindFromParent() }
         let floatingWindowData = FloatingWindowData(
             window: window,
             center: center,
@@ -187,8 +187,10 @@ struct FocusCommand: Command {
     }
     let floatingWindows: [FloatingWindowData] = _floatingWindows.sortedBy { $0.center.getProjection($0.tilingParent.orientation) }.reversed()
 
-    for floating in floatingWindows { // Make floating windows be seen as tiling
-        floating.window.bind(to: floating.tilingParent, adaptiveWeight: 1, index: floating.index)
+    withoutDirectionalFocusHistoryReset {
+        for floating in floatingWindows { // Make floating windows be seen as tiling
+            floating.window.bind(to: floating.tilingParent, adaptiveWeight: 1, index: floating.index)
+        }
     }
     return floatingWindows
 }
@@ -198,8 +200,10 @@ struct FocusCommand: Command {
     defer {
         mruBefore?.markAsMostRecentChild()
     }
-    for floating in floatingWindows {
-        floating.window.bind(to: workspace.floatingWindowsContainer, adaptiveWeight: floating.adaptiveWeight, index: INDEX_BIND_LAST)
+    withoutDirectionalFocusHistoryReset {
+        for floating in floatingWindows {
+            floating.window.bind(to: workspace.floatingWindowsContainer, adaptiveWeight: floating.adaptiveWeight, index: INDEX_BIND_LAST)
+        }
     }
 }
 

@@ -93,18 +93,34 @@ open class TreeNode: Equatable, AeroAny {
         // 2. Misbehaved apps that abuse real window as popups https://github.com/nikitabobko/AeroSpace/issues/106 (the
         //    last appeared window, is not necessarily the one that has the focus)
         markAsMostRecentChild()
+        resetDirectionalFocusHistoryOnStructuralChange(workspace: nodeWorkspace)
         return result
     }
 
+    @MainActor
     private func unbindIfBound() -> BindingData? {
         guard let _parent else { return nil }
+        let sourceWorkspace = _parent.nodeWorkspace
 
         let index = _parent._children.remove(element: self) ?? dieT("Can't find child in its parent")
         check(_parent._mruChildren.remove(self))
         self._parent = nil
         unboundStacktrace = getStringStacktrace()
 
+        resetDirectionalFocusHistoryOnStructuralChange(workspace: sourceWorkspace)
         return BindingData(parent: _parent, adaptiveWeight: adaptiveWeight, index: index)
+    }
+
+    /// Moving/adding/removing a window in the tree invalidates the remembered directional-focus
+    /// targets (`Window.directionalFocusReturn`): a stored target may now sit in a different place,
+    /// yet still pass the read-time validation in `FocusCommand`. Since every structural change goes
+    /// through `bind`/`unbindIfBound`, dropping the history here covers AeroSpace commands, mouse
+    /// drags, and non-AeroSpace window spawns/closures/moves alike. Only window (leaf) rebinds
+    /// matter — re-nesting under a new container leaves every window in place.
+    @MainActor
+    private func resetDirectionalFocusHistoryOnStructuralChange(workspace: Workspace?) {
+        guard self is Window, directionalFocusHistoryResetSuppression == 0 else { return }
+        workspace?.resetDirectionalFocusHistory()
     }
 
     func markAsMostRecentChild() {
@@ -117,6 +133,7 @@ open class TreeNode: Equatable, AeroAny {
 
     var mruChildren: MruStack<TreeNode> { _mruChildren }
 
+    @MainActor
     @discardableResult
     func unbindFromParent() -> BindingData {
         unbindIfBound() ?? dieT("\(self) is already unbound. The stacktrace where it was unbound:\n\(unboundStacktrace.prettyDescription)")
@@ -138,6 +155,18 @@ open class TreeNode: Equatable, AeroAny {
 // periphery:ignore - Generic T is used
 struct TreeNodeUserDataKey<T> {
     let key: String
+}
+
+@MainActor private var directionalFocusHistoryResetSuppression = 0
+
+/// Runs `body` without letting window (un)binds inside it reset directional-focus history. Used for
+/// temporary tree reshuffles that are undone before control returns to the user (e.g. the
+/// `--floating-as-tiling` shuffle in `FocusCommand`), so the history survives the round-trip.
+@MainActor
+func withoutDirectionalFocusHistoryReset<T>(_ body: () -> T) -> T {
+    directionalFocusHistoryResetSuppression += 1
+    defer { directionalFocusHistoryResetSuppression -= 1 }
+    return body()
 }
 
 let WEIGHT_DOESNT_MATTER = CGFloat(-2)

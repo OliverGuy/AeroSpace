@@ -23,6 +23,18 @@ extension Workspace {
         floatingWindowsContainer.children.filterIsInstance(of: Window.self)
     }
 
+    /// Clears `Window.directionalFocusReturn` for every window in the workspace. Any tree
+    /// restructuring invalidates the remembered directional-focus targets (e.g. a swap keeps the
+    /// source window inside the direction-side subtree, so the read-time validation can't detect the
+    /// staleness), so the history must be dropped to avoid focus jumping to the wrong window. Called
+    /// from the `bind`/`unbind` choke point — see `resetDirectionalFocusHistoryOnStructuralChange`.
+    @MainActor
+    func resetDirectionalFocusHistory() {
+        for window in allLeafWindowsRecursive {
+            window.directionalFocusReturn = [:]
+        }
+    }
+
     @MainActor
     var floatingWindowsContainer: FloatingWindowsContainer {
         let containers = children.filterIsInstance(of: FloatingWindowsContainer.self)

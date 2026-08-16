@@ -18,10 +18,8 @@ extension MonitorTarget {
     @MainActor func resolve(_ currentMonitor: MonitorInfo, wrapAround: Bool) -> Result<MonitorInfo, String> {
         switch self {
             case .direction(let direction):
-                guard let (monitorsInDirection, index) = currentMonitor.findRelativeMonitor(inDirection: direction) else {
-                    return .failure("Should never happen. Can't find the current monitor")
-                }
-                let targetMonitor = wrapAround ? monitorsInDirection.get(wrappingIndex: index) : monitorsInDirection.getOrNil(atIndex: index)
+                let targetMonitor = currentMonitor.findRelativeMonitor(inDirection: direction)
+                    ?? (wrapAround ? currentMonitor.findWrapAroundMonitor(inDirection: direction) : nil)
                 guard let targetMonitor else {
                     return .failure("No monitors in direction \(direction)")
                 }
@@ -44,23 +42,5 @@ extension MonitorTarget {
                 }
                 return .success(targetMonitor)
         }
-    }
-}
-
-extension MonitorInfo {
-    func relation(to monitor: MonitorInfo) -> Orientation {
-        guard let otherYRange = monitor.rect.minY.until(excl: monitor.rect.maxY) else { return .h }
-        guard let myYRange = rect.minY.until(excl: rect.maxY) else { return .h }
-        return myYRange.overlaps(otherYRange) ? .h : .v
-    }
-
-    func findRelativeMonitor(inDirection direction: CardinalDirection) -> (monitorsInDirection: [MonitorInfo], index: Int)? {
-        let currentMonitor = self
-        let monitors = sortedMonitorInfos.filter {
-            currentMonitor.rect.topLeftCorner == $0.rect.topLeftCorner ||
-                $0.relation(to: currentMonitor) == direction.orientation
-        }
-        guard let index = monitors.firstIndex(where: { $0.rect.topLeftCorner == currentMonitor.rect.topLeftCorner }) else { return nil }
-        return (monitors, index + direction.focusOffset)
     }
 }

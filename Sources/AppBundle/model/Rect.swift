@@ -62,6 +62,13 @@ extension Rect {
     var size: CGSize { CGSize(width: width, height: height) }
 
     func getDimension(_ orientation: Orientation) -> CGFloat { orientation == .h ? width : height }
+    func getMin(_ orientation: Orientation) -> CGFloat { orientation == .h ? minX : minY }
+    func getMax(_ orientation: Orientation) -> CGFloat { orientation == .h ? maxX : maxY }
+
+    /// The length the two rects share on `orientation`'s axis. 0 if they only touch or don't overlap at all.
+    func overlap(with rect: Rect, on orientation: Orientation) -> CGFloat {
+        max(0, min(getMax(orientation), rect.getMax(orientation)) - max(getMin(orientation), rect.getMin(orientation)))
+    }
 
     /// Slice this rect along `axis` into sub-rects sized proportionally to `weights`.
     func sliced(along axis: Orientation, weights: [CGFloat]) -> [Rect] {

@@ -107,14 +107,10 @@ struct FocusCommand: Command {
             }
         case .allMonitorsOuterFrame:
             let currentMonitor = target.workspace.workspaceMonitor
-            guard let (monitors, index) = currentMonitor.findRelativeMonitor(inDirection: direction) else {
-                return .fail(io.err(bugPrompt("Should never happen. Can't find the current monitor")))
-            }
-
-            if let targetMonitor = monitors.getOrNil(atIndex: index) {
+            if let targetMonitor = currentMonitor.findRelativeMonitor(inDirection: direction) {
                 return .from(bool: targetMonitor.activeWorkspace.focusWorkspace())
             } else {
-                guard let wrapped = monitors.get(wrappingIndex: index) else { return .fail(io.err(bugPrompt("\(index) \(monitors)"))) }
+                let wrapped = currentMonitor.findWrapAroundMonitor(inDirection: direction)
                 return hitAllMonitorsOuterFrameBoundaries(target, io, args, direction, wrapped)
             }
     }

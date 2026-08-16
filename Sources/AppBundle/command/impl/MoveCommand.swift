@@ -87,11 +87,11 @@ struct MoveCommand: Command {
                     return .succ
             }
         case .allMonitorsOuterFrame:
-            guard let (monitors, index) = window.nodeMonitor?.findRelativeMonitor(inDirection: direction) else {
+            guard let currentMonitor = window.nodeMonitor else {
                 return .fail(io.err("Should never happen. Can't find the current monitor"))
             }
 
-            if monitors.indices.contains(index) {
+            if currentMonitor.findRelativeMonitor(inDirection: direction) != nil {
                 let moveNodeToMonitorArgs = MoveNodeToMonitorCmdArgs(target: .direction(direction))
                     .copy(\.windowId, window.windowId)
                     .copy(\.focusFollowsWindow, focus.windowOrNil == window)

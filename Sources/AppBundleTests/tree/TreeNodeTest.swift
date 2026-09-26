@@ -33,7 +33,7 @@ final class TreeNodeTest: XCTestCase {
         // Regression: when a workspace is force-assigned to this monitor, the stub must reuse it
         // instead of skipping to the first unassigned (high) number.
         config.workspaceToMonitorForceAssignment = ["1": [.main]]
-        XCTAssertEqual(getStubWorkspace(for: mainMonitor).name, "1")
+        XCTAssertEqual(getStubWorkspace(for: mainMonitorInfo).name, "1")
     }
 
     func testNormalizeContainers_dontRemoveRoot() {

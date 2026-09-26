@@ -40,6 +40,23 @@ func setUpWorkspacesForTests() {
     TestApp.shared.windows = []
 }
 
+/// `monitorInfos` is hardcoded to a single monitor under tests, so anything that reasons about a
+/// multi-monitor setup has to be handed its geometry explicitly
+struct TestMonitor: MonitorInfo {
+    let rect: Rect
+    var visibleRect: Rect { rect }
+    let name: String
+    let monitorAppKitNsScreenScreensId = 1
+    let isMain = false
+    var width: CGFloat { rect.width }
+    var height: CGFloat { rect.height }
+
+    init(topLeftX: CGFloat, topLeftY: CGFloat, width: CGFloat, height: CGFloat, name: String? = nil) {
+        self.rect = Rect(topLeftX: topLeftX, topLeftY: topLeftY, width: width, height: height)
+        self.name = name ?? "monitor at (\(topLeftX), \(topLeftY))"
+    }
+}
+
 extension ParsedCmd {
     var errorOrNil: String? {
         return switch self {

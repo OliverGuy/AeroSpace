@@ -2,7 +2,6 @@
 import Common
 import XCTest
 
-/// `monitors` is hardcoded to a single monitor under tests, so these drive the geometry directly
 final class MonitorDirectionTest: XCTestCase {
     /// ```
     /// 1 2
@@ -96,19 +95,4 @@ extension MonitorInfo {
 
 private func assertMonitor(_ actual: MonitorInfo?, _ expected: MonitorInfo, file: StaticString = #filePath, line: UInt = #line) {
     XCTAssertEqual(actual?.name, expected.name, file: file, line: line)
-}
-
-private struct TestMonitor: MonitorInfo {
-    let rect: Rect
-    var visibleRect: Rect { rect }
-    let name: String
-    let monitorAppKitNsScreenScreensId = 1
-    let isMain = false
-    var width: CGFloat { rect.width }
-    var height: CGFloat { rect.height }
-
-    init(topLeftX: CGFloat, topLeftY: CGFloat, width: CGFloat, height: CGFloat) {
-        self.rect = Rect(topLeftX: topLeftX, topLeftY: topLeftY, width: width, height: height)
-        self.name = "monitor at (\(topLeftX), \(topLeftY))"
-    }
 }

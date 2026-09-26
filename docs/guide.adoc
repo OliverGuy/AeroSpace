@@ -818,6 +818,33 @@ The first matching pattern will be used
 
 xref:commands.adoc#move-workspace-to-monitor[move-workspace-to-monitor] command has no effect for workspaces that have monitor assignment
 
+[#exclude-monitors-from-workspace-assignment]
+=== Exclude monitors from workspace assignment
+
+`exclude-monitors-from-workspace-assignment` keeps monitors out of the assignment above.
+It's useful for a monitor you don't want your regular workspaces to appear on, such as a projector or a TV that you only ever mirror something onto
+
+[source,toml]
+----
+exclude-monitors-from-workspace-assignment = ['projector', 'conference tv']
+----
+
+The syntax is the same monitor patterns as `workspace-to-monitor-force-assignment`, either a single pattern or an array
+
+* Excluded monitors are skipped while resolving `workspace-to-monitor-force-assignment`.
+  If a workspace names several monitors, the first non-excluded one wins
+* If every monitor a workspace names is excluded, the workspace is assigned to the first non-excluded monitor instead.
+  It is never left to fall back onto the excluded monitor
+* An excluded monitor shows the first workspace that isn't assigned to any monitor, the same workspace it would get if you had no assignment at all
+* Workspaces without an assignment are unaffected, and can still end up on an excluded monitor
+
+Exclusion only applies to assignment.
+Commands that name a monitor explicitly still work on excluded monitors, including
+xref:commands.adoc#focus-monitor[focus-monitor],
+xref:commands.adoc#move-node-to-monitor[move-node-to-monitor] and
+xref:commands.adoc#move-workspace-to-monitor[move-workspace-to-monitor],
+and so do per-monitor `gaps` values
+
 == Dialog heuristics
 
 * Apple provides accessibility API for apps to let others know which of their windows are dialogs

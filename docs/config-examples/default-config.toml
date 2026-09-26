@@ -84,6 +84,12 @@ focus-follows-mouse.enabled = false
 # See https://nikitabobko.github.io/AeroSpace/guide#key-mapping
 key-mapping.preset = 'qwerty'
 
+# Monitors that workspaces should never be assigned to, such as a projector or a shared TV.
+# Monitor pattern is the same as for 'workspace-to-monitor-force-assignment'.
+# See:
+# https://nikitabobko.github.io/AeroSpace/guide#exclude-monitors-from-workspace-assignment
+# exclude-monitors-from-workspace-assignment = ['projector']
+
 # Gaps between windows (inner-*) and between monitor edges (outer-*).
 # Possible values:
 # - Constant:     gaps.outer.top = 8

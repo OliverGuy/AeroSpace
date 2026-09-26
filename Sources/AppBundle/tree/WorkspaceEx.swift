@@ -72,11 +72,19 @@ extension Workspace {
         }
     }
 
-    @MainActor var forceAssignedMonitor: MonitorInfo? {
+    @MainActor var forceAssignedMonitor: MonitorInfo? { forceAssignedMonitor(among: sortedMonitorInfos) }
+
+    /// The chain is walked in order and the first monitor it names wins, skipping excluded ones. If
+    /// every monitor the chain names is excluded, the workspace is pinned to the first monitor that
+    /// isn't, rather than being left to drift back onto an excluded one. A chain that names no
+    /// connected monitor at all still leaves the workspace unassigned, free to go anywhere.
+    @MainActor func forceAssignedMonitor(among sortedMonitors: [MonitorInfo]) -> MonitorInfo? {
         guard let monitorDescriptions = config.workspaceToMonitorForceAssignment[name] else { return nil }
-        let sortedMonitors = sortedMonitorInfos
-        return monitorDescriptions.lazy
-            .compactMap { $0.resolveMonitor(sortedMonitors: sortedMonitors) }
-            .first
+        let named = monitorDescriptions.flatMap { description in
+            sortedMonitors.filter { description.matches($0, sortedMonitors: sortedMonitors) }
+        }
+        guard !named.isEmpty else { return nil }
+        return named.first { !$0.isExcludedFromWorkspaceAssignment(among: sortedMonitors) }
+            ?? sortedMonitors.first { !$0.isExcludedFromWorkspaceAssignment(among: sortedMonitors) }
     }
 }
